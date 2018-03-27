@@ -42,8 +42,8 @@ opendlv::sim::Frame WorldObject::step(double dt) noexcept
 {
   opendlv::sim::KinematicState kinematicState;
   {
-    kinematicState = m_kinematicState;
     std::lock_guard<std::mutex> lock(m_kinematicStateMutex);
+    kinematicState = m_kinematicState;
   }
 
   float const x = m_frame.x();
