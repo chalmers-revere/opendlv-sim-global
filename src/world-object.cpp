@@ -60,6 +60,8 @@ opendlv::sim::Frame WorldObject::step(double dt) noexcept
   float const pitchRate = kinematicState.pitchRate();
   float const yawRate = kinematicState.yawRate();
 
+
+
   double const deltaRoll = rollRate * dt;
   double const deltaPitch = pitchRate * dt;
   double const deltaYaw = yawRate * dt;
@@ -77,16 +79,19 @@ opendlv::sim::Frame WorldObject::step(double dt) noexcept
 
   Eigen::Quaternion<double> const newQ = deltaQ * q;
 
-  Eigen::Vector3d const newEuler = newQ.toRotationMatrix().eulerAngles(0, 1, 2);
-
-
-  float const newX = static_cast<float>(x + vx * dt);
-  float const newY = static_cast<float>(y + vy * dt);
-  float const newZ = static_cast<float>(z + vz * dt);
+  Eigen::Matrix3d const rotationMatrix = newQ.toRotationMatrix();
+  Eigen::Vector3d const newEuler = rotationMatrix.eulerAngles(0, 1, 2);
 
   float const newRoll = static_cast<float>(newEuler[0]);
   float const newPitch = static_cast<float>(newEuler[1]);
   float const newYaw = static_cast<float>(newEuler[2]);
+
+  Eigen::Vector3d const localDelta(vx * dt, vy * dt, vz * dt);
+  Eigen::Vector3d const globalDelta = rotationMatrix * localDelta;
+
+  float const newX = static_cast<float>(x + globalDelta[0]);
+  float const newY = static_cast<float>(y + globalDelta[1]);
+  float const newZ = static_cast<float>(z + globalDelta[1]);
 
   opendlv::sim::Frame frame;
   frame.x(newX);
