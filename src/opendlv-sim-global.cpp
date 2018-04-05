@@ -34,38 +34,44 @@ int32_t main(int32_t argc, char **argv) {
     float const ROLL{(commandlineArguments["roll"].size() != 0) ? static_cast<float>(std::stof(commandlineArguments["roll"])) : 0.0f};
     float const PITCH{(commandlineArguments["pitch"].size() != 0) ? static_cast<float>(std::stof(commandlineArguments["pitch"])) : 0.0f};
     float const YAW{(commandlineArguments["yaw"].size() != 0) ? static_cast<float>(std::stof(commandlineArguments["yaw"])) : 0.0f};
-    const bool VERBOSE{commandlineArguments.count("verbose") != 0};
+    uint32_t const FRAME_ID = std::stoi(commandlineArguments["frame-id"]);
+    bool const VERBOSE{commandlineArguments.count("verbose") != 0};
+    uint16_t const CID = std::stoi(commandlineArguments["cid"]);
+    float const FREQ = std::stof(commandlineArguments["freq"]);
+    double const DT = 1.0 / FREQ;
 
     WorldObject worldObject{X, Y, Z, ROLL, PITCH, YAW};
 
-    uint32_t const FRAME_ID = std::stoi(commandlineArguments["frame-id"]);
-    auto onEnvelope{[&FRAME_ID, &worldObject](cluon::data::Envelope &&envelope)
+    auto onKinematicState{[&FRAME_ID, &worldObject](cluon::data::Envelope &&envelope)
       {
         uint32_t const senderStamp = envelope.senderStamp();
-        if (envelope.dataType() == opendlv::sim::KinematicState::ID() &&
-            FRAME_ID == senderStamp) {
+        if (FRAME_ID == senderStamp) {
           auto kinematicState = cluon::extractMessage<opendlv::sim::KinematicState>(std::move(envelope));
           worldObject.setKinematicState(kinematicState);
         }
       }};
 
-    cluon::OD4Session od4{static_cast<uint16_t>(std::stoi(commandlineArguments["cid"])), onEnvelope};
+    cluon::OD4Session od4{CID};
+    od4.dataTrigger(opendlv::sim::KinematicState::ID(), onKinematicState);
 
-    double dt = 1.0 / std::stoi(commandlineArguments["freq"]);
-    while (od4.isRunning()) {
-      std::this_thread::sleep_for(std::chrono::duration<double>(dt));
+    auto atFrequency{[&FRAME_ID, &VERBOSE, &DT, &worldObject, &od4]() -> bool
+      {
+        opendlv::sim::Frame frame = worldObject.step(DT);
 
-      opendlv::sim::Frame frame = worldObject.step(dt);
+        cluon::data::TimeStamp sampleTime;
+        od4.send(frame, sampleTime, FRAME_ID);
+        if (VERBOSE) {
+          std::cout << "Frame  with id " << FRAME_ID
+            << " is at [x=" << frame.x() << ", y=" << frame.y() << ", z="
+            << frame.z() << "] with the rotation [roll=" << frame.roll() << ", pitch="
+            << frame.pitch() << ", yaw=" << frame.yaw() << "]." << std::endl;
+        }
 
-      cluon::data::TimeStamp sampleTime;
-      od4.send(frame, sampleTime, FRAME_ID);
-      if (VERBOSE) {
-        std::cout << "Frame  with id " << FRAME_ID
-          << " is at [x=" << frame.x() << ", y=" << frame.y() << ", z="
-          << frame.z() << "] with the rotation [roll=" << frame.roll() << ", pitch="
-          << frame.pitch() << ", yaw=" << frame.yaw() << "]." << std::endl;
-      }
-    }
+        return true;
+      }};
+
+
+    od4.timeTrigger(FREQ, atFrequency);
   }
   return retCode;
 }
