@@ -91,7 +91,7 @@ opendlv::sim::Frame WorldObject::step(double dt) noexcept
 
   float const newX = static_cast<float>(x + globalDelta[0]);
   float const newY = static_cast<float>(y + globalDelta[1]);
-  float const newZ = static_cast<float>(z + globalDelta[1]);
+  float const newZ = static_cast<float>(z + globalDelta[2]);
 
   opendlv::sim::Frame frame;
   frame.x(newX);
