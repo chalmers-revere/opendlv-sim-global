@@ -20,7 +20,8 @@ RUN apk update && \
     g++ \
     make \
     upx \
-    mercurial
+    mercurial \
+    linux-headers
 
 RUN hg clone https://bitbucket.org/eigen/eigen && cd eigen && mkdir build && cd build && cmake .. && make -j4 install
 
