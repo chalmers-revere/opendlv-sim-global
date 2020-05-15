@@ -53,6 +53,7 @@ int32_t main(int32_t argc, char **argv) {
       << "based on its kinematic state." << std::endl
       << "Usage:   " << argv[0] << " --frame-id=<ID of frame to integrate> "
       << "--freq=<Integration frequency> --cid=<od4 session> "
+      << "[--timemod=<Time scale modifier for simulation speed. Default: 1.0>] "
       << "[--extra-cid-out=<Additional conferences for output, as "
       << "'cid1:frameid,cid2:frameid'>] "
       << "[--x=<Initial X position] [--y=<Initial Y position] "
@@ -75,6 +76,9 @@ int32_t main(int32_t argc, char **argv) {
       ? static_cast<float>(std::stof(commandlineArguments["pitch"])) : 0.0f};
     float const YAW{(commandlineArguments["yaw"].size() != 0) 
       ? static_cast<float>(std::stof(commandlineArguments["yaw"])) : 0.0f};
+    
+    float const TIMEMOD{(commandlineArguments["timemod"].size() != 0) 
+      ? static_cast<float>(std::stof(commandlineArguments["timemod"])) : 1.0f};
 
     uint32_t const FRAME_ID = std::stoi(commandlineArguments["frame-id"]);
     bool const VERBOSE{commandlineArguments.count("verbose") != 0};
@@ -137,7 +141,7 @@ int32_t main(int32_t argc, char **argv) {
       }};
 
 
-    od4.timeTrigger(FREQ, atFrequency);
+    od4.timeTrigger(TIMEMOD * FREQ, atFrequency);
   }
   return retCode;
 }
