@@ -26,9 +26,9 @@ RUN apk update && \
     cmake \
     g++ \
     make \
-    mercurial
+    git
 
-RUN hg clone https://bitbucket.org/eigen/eigen && cd eigen && mkdir build && cd build && cmake .. && make -j4 install
+RUN git clone --depth=1 git clone https://gitlab.com/libeigen/eigen.git && cd eigen && mkdir build && cd build && cmake .. && make -j4 install
 
 ADD . /opt/sources
 WORKDIR /opt/sources
